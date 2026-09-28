@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+langchain-community
+langchain-core
+langchain-google-genai
+qdrant-client
+sentence-transformers
+pydantic
