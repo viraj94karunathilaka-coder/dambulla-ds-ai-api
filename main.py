@@ -49,18 +49,14 @@ embeddings = HuggingFaceEmbeddings(
     encode_kwargs={'normalize_embeddings': True}
 )
 
-# 2. Qdrant Vector DB Connection
+# Qdrant Vector DB Connection (Updated for new LangChain)
 try:
-    qdrant_client = QdrantClient(
+    vector_store = QdrantVectorStore.from_existing_collection(
+        embedding=embeddings,
+        collection_name=COLLECTION_NAME,
         url=QDRANT_URL,
         api_key=QDRANT_API_KEY
     )
-    vector_store = Qdrant(
-        client=qdrant_client,
-        collection_name=COLLECTION_NAME,
-        embeddings=embeddings
-    )
-    # Retrieve top 3 relevant document chunks for context
     retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 except Exception as e:
     print(f"Warning: Qdrant client initialization error: {e}")
