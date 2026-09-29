@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-# LangChain & Gemini Imports (Updated to latest syntax)
+# LangChain Imports (Updated & Error-Free imports)
 from langchain_qdrant import QdrantVectorStore
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -21,7 +21,7 @@ COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "dambulla_ds_circulars")
 # Initialize FastAPI App
 app = FastAPI(
     title="Dambulla Divisional Secretariat AI Assistant API",
-    description="Multilingual (Sinhala/Tamil/English) RAG API for DS Office Services",
+    description="Multilingual RAG API for DS Office Services",
     version="1.0.0"
 )
 
@@ -54,7 +54,7 @@ except Exception as e:
     print(f"Warning: Qdrant client initialization error: {e}")
     retriever = None
 
-# 3. Google Gemini 1.5 Flash Setup
+# 3. Google Gemini Setup
 llm = ChatGoogleGenerativeAI(
     model="gemini-1.5-flash",
     google_api_key=GEMINI_API_KEY,
@@ -64,14 +64,8 @@ llm = ChatGoogleGenerativeAI(
 
 # 4. System Prompt
 system_prompt = (
-    "ඔබ දඹුල්ල ප්‍රාදේශීය ලේකම් කාර්යාලයේ (Dambulla Divisional Secretariat) නිල AI සහායකයා වේ.\n"
-    "පහත දක්වා ඇති නිල රාජ්‍ය චක්‍රලේඛ, උපදෙස් පත්‍රිකා සහ තොරතුරු ඇසුරෙන් පමණක් පරිශීලකයාගේ ප්‍රශ්නයට පිළිතුරු සපයන්න.\n"
-    "You are the official AI assistant for the Dambulla Divisional Secretariat. "
-    "Respond accurately in the language used by the user (Sinhala, Tamil, or English).\n\n"
-    "රීති / Rules:\n"
-    "1. පිළිතුර ලබා දෙන විට අදාළ චක්‍රලේඛ අංකය, වර්ෂය හෝ වගන්තිය (Circular Number / Clause) තිබේ නම් එය පැහැදිලිව සඳහන් කරන්න.\n"
-    "2. ලබාදී ඇති Context එක තුළ පිළිතුර නොමැති නම්, කිසිවිටෙක අසත්‍ය හෝ අනුමාන පිළිතුරු ලබා නොදෙන්න. "
-    "ඒ වෙනුවට 'මෙම තොරතුර පද්ධතියේ දැනට නොමැත. කරුණාකර ප්‍රාදේශීය ලේකම් කාර්යාලයේ අදාළ අංශය වෙත පැමිණෙන්න.' යනුවෙන් පවසන්න.\n\n"
+    "ඔබ දඹුල්ල ප්‍රාදේශීය ලේකම් කාර්යාලයේ නිල AI සහායකයා වේ.\n"
+    "You are the official AI assistant for the Dambulla Divisional Secretariat.\n\n"
     "Context:\n{context}"
 )
 
@@ -80,7 +74,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("human", "{input}"),
 ])
 
-# Combine LLM + Prompt + Retrieval Chain
+# Build Chain
 document_chain = create_stuff_documents_chain(llm, prompt)
 if retriever:
     rag_chain = create_retrieval_chain(retriever, document_chain)
@@ -88,7 +82,7 @@ else:
     rag_chain = None
 
 class QueryRequest(BaseModel):
-    question: str = Field(..., example="අස්වැසුමා සහනයට ඉල්ලුම් කරන්නේ කෙසේද?")
+    question: str
 
 class QueryResponse(BaseModel):
     answer: str
@@ -96,11 +90,7 @@ class QueryResponse(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {
-        "status": "online",
-        "office": "Dambulla Divisional Secretariat",
-        "service": "Multilingual AI RAG Engine"
-    }
+    return {"status": "online", "office": "Dambulla Divisional Secretariat"}
 
 @app.post("/chat", response_model=QueryResponse)
 async def chat_endpoint(request: QueryRequest):
